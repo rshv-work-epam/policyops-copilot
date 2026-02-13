@@ -26,6 +26,8 @@ def list_approvals(identity: Identity = Depends(get_identity), db: Session = Dep
 
 @router.post("/admin/approvals/{approval_id}/approve")
 def approve(approval_id: int, req: dict, identity: Identity = Depends(get_identity), db: Session = Depends(get_db)):
+    if identity.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin required")
     row = db.get(Approval, approval_id)
     if not row:
         raise HTTPException(status_code=404, detail="Not found")
@@ -42,6 +44,8 @@ def approve(approval_id: int, req: dict, identity: Identity = Depends(get_identi
 
 @router.post("/admin/approvals/{approval_id}/reject")
 def reject(approval_id: int, req: dict, identity: Identity = Depends(get_identity), db: Session = Depends(get_db)):
+    if identity.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin required")
     row = db.get(Approval, approval_id)
     if not row:
         raise HTTPException(status_code=404, detail="Not found")
@@ -51,6 +55,7 @@ def reject(approval_id: int, req: dict, identity: Identity = Depends(get_identit
     row.decision_notes = parsed.decision_notes
     row.updated_at = datetime.now(timezone.utc)
     db.add(row)
+    db.add(AuditLog(actor=identity.user_id, action="approval_rejected", payload=str(approval_id), correlation_id="admin", created_at=datetime.now(timezone.utc)))
     db.commit()
     return row
 
