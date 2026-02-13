@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: policyops
+      POSTGRES_PASSWORD: policyops
+      POSTGRES_DB: policyops
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  api:
+    build: ./backend
+    env_file: .env.example
+    environment:
+      DATABASE_URL: postgresql+psycopg://policyops:policyops@postgres:5432/policyops
+      POLICY_DATA_PATH: /app/data/sample_policies
+    depends_on: [postgres]
+    ports: ["8000:8000"]
+    volumes:
+      - ./data:/app/data
+
+  web:
+    build: ./frontend
+    environment:
+      NEXT_PUBLIC_API_BASE: http://api:8000
+    depends_on: [api]
+    ports: ["3000:3000"]
+
+volumes:
+  pgdata:
